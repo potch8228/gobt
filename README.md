@@ -77,9 +77,11 @@ Usage
 
 or
 
-`sudo go run gobt.go`
+`sudo go run`
 
 (need to execute with root/admin privilege)
+
+After running gobt on transmission side, let the receiver to pair.
 
 In order to stop program, send an interrupt signal from remote or secondary shell.
 
