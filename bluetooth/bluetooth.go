@@ -1,4 +1,4 @@
-package gobt
+package bluetooth
 
 import (
 	"fmt"
@@ -17,6 +17,8 @@ type RawSockaddrL2 struct {
 	Psm    uint16
 	Bdaddr [6]uint8
 }
+
+// Represents L2CAP socket address
 type SockaddrL2 struct {
 	PSM    uint16
 	Bdaddr [6]uint8
@@ -65,7 +67,6 @@ func internalSelect(fd int, r, w, e *FdSet, to time.Duration) (int, error) {
 	wFd := uintptr(unsafe.Pointer(w))
 	eFd := uintptr(unsafe.Pointer(e))
 
-	// n, err := unix.Select(fd, rFd, wFd, eFd, &t)
 	n, _, err := unix.Syscall6(unix.SYS_SELECT, uintptr(fd), rFd, wFd, eFd, uintptr(unsafe.Pointer(&t)), 0)
 	if err != 0 {
 		log.Println("Select Error: ", err)
@@ -85,6 +86,7 @@ type Bluetooth struct {
 	mu    sync.Mutex
 }
 
+// Sets socket as blocking mode(true) or Non-blocking mode(false)
 func (bt *Bluetooth) SetBlocking(block bool) error {
 	bt.mu.Lock()
 	defer bt.mu.Unlock()
@@ -112,6 +114,9 @@ func (bt *Bluetooth) SetBlocking(block bool) error {
 	return nil
 }
 
+// Creates L2CAP socket wrapper with given file descriptor
+// This file descriptor is provided by BlueZ DBus interface
+// e.g. org.bluez.Profile1.NewConnection()
 func NewBluetoothSocket(fd int) (*Bluetooth, error) {
 	bt := &Bluetooth{
 		fd:     fd,
@@ -141,6 +146,7 @@ func NewBluetoothSocket(fd int) (*Bluetooth, error) {
 	return bt, nil
 }
 
+// Creates L2CAP socket and lets it listen on given PSM
 func Listen(psm uint, bklen int, block bool) (*Bluetooth, error) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -201,6 +207,7 @@ func Listen(psm uint, bklen int, block bool) (*Bluetooth, error) {
 	return bt, nil
 }
 
+// Accepts on listening socket and return received connection
 func (bt *Bluetooth) Accept() (*Bluetooth, error) {
 	mu.Lock()
 	defer mu.Unlock()

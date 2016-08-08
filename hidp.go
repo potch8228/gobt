@@ -7,6 +7,7 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/godbus/dbus"
+	"github.com/potch8228/gobt/bluetooth"
 )
 
 type HidProfile struct {
@@ -14,13 +15,13 @@ type HidProfile struct {
 
 	gb map[dbus.ObjectPath]*GoBt
 
-	connIntr *Bluetooth
+	connIntr *bluetooth.Bluetooth
 
-	sintr *Bluetooth
-	sctrl *Bluetooth
+	sintr *bluetooth.Bluetooth
+	sctrl *bluetooth.Bluetooth
 }
 
-func NewHidProfile(path string, connIntr *Bluetooth) *HidProfile {
+func NewHidProfile(path string, connIntr *bluetooth.Bluetooth) *HidProfile {
 	return &HidProfile{
 		path:     (dbus.ObjectPath)(path),
 		gb:       make(map[dbus.ObjectPath]*GoBt),
@@ -44,12 +45,12 @@ func (p *HidProfile) NewConnection(dev dbus.ObjectPath, fd dbus.UnixFD, fdProps 
 	p.sintr, err = p.connIntr.Accept()
 	if err != nil {
 		p.connIntr.Close()
-		log.Println("Accept failed: ", err, PSMINTR)
-		return dbus.NewError(fmt.Sprintf("Accept failed: %v", PSMINTR), []interface{}{err})
+		log.Println("Accept failed: ", err, bluetooth.PSMINTR)
+		return dbus.NewError(fmt.Sprintf("Accept failed: %v", bluetooth.PSMINTR), []interface{}{err})
 	}
-	log.Println("Connection Accepted : ", PSMINTR)
+	log.Println("Connection Accepted : ", bluetooth.PSMINTR)
 
-	p.sctrl, err = NewBluetoothSocket(int(fd))
+	p.sctrl, err = bluetooth.NewBluetoothSocket(int(fd))
 	if err != nil {
 		_err := unix.Close(int(fd))
 

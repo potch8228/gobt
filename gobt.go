@@ -4,6 +4,9 @@ import (
 	"log"
 	"path/filepath"
 	"time"
+
+	"github.com/potch8228/gobt/bluetooth"
+	"github.com/potch8228/gobt/hid"
 )
 
 type GoBtPollState byte
@@ -24,15 +27,15 @@ const (
 )
 
 type GoBt struct {
-	kbds  []*Keyboard
-	mses  []*Mouse
-	sintr *Bluetooth
-	sctrl *Bluetooth
+	kbds  []*hid.Keyboard
+	mses  []*hid.Mouse
+	sintr *bluetooth.Bluetooth
+	sctrl *bluetooth.Bluetooth
 
 	cctl chan GoBtPollState
 }
 
-func NewGoBt(sintr, sctrl *Bluetooth) *GoBt {
+func NewGoBt(sintr, sctrl *bluetooth.Bluetooth) *GoBt {
 	gobt := GoBt{
 		sintr: sintr,
 		sctrl: sctrl,
@@ -43,7 +46,7 @@ func NewGoBt(sintr, sctrl *Bluetooth) *GoBt {
 	gobt.registerKeyboardPaths(kbdPs)
 
 	msePs, _ := filepath.Glob("/dev/input/by-path/*event-mouse")
-	go gobt.registerMousePaths(msePs)
+	gobt.registerMousePaths(msePs)
 
 	log.Println("Sending hello on ctrl channel")
 	if _, err := gobt.sctrl.Write([]byte{0xa1, 0x13, 0x03}); err != nil {
@@ -67,7 +70,7 @@ func (gb *GoBt) startProcessCtrlEvent() {
 			log.Println("Will Quit GoBt Process loop")
 			return
 		default:
-			r := make([]byte, BUFSIZE)
+			r := make([]byte, bluetooth.BUFSIZE)
 			d, err := gb.sctrl.Read(r)
 			if err != nil || d < 1 {
 				log.Println("GoBt.procesCtrlEvent: no data received - quitting event loop")
@@ -97,10 +100,10 @@ func (gb *GoBt) startProcessCtrlEvent() {
 }
 
 func (gb *GoBt) registerKeyboardPaths(ps []string) {
-	kbds := make([]*Keyboard, len(ps))
+	kbds := make([]*hid.Keyboard, len(ps))
 	var err error
 	for i, p := range ps {
-		kbds[i], err = NewKeyboard(p, gb.sintr)
+		kbds[i], err = hid.NewKeyboard(p, gb.sintr)
 		if err != nil {
 			log.Println("New Keyboard Initialization failed: ", err, i)
 		}
@@ -109,10 +112,10 @@ func (gb *GoBt) registerKeyboardPaths(ps []string) {
 }
 
 func (gb *GoBt) registerMousePaths(ps []string) {
-	mses := make([]*Mouse, len(ps))
+	mses := make([]*hid.Mouse, len(ps))
 	var err error
 	for i, p := range ps {
-		mses[i], err = NewMouse(p, gb.sintr)
+		mses[i], err = hid.NewMouse(p, gb.sintr)
 		if err != nil {
 			log.Println("New Mouse Initialization failed: ", err, i)
 		}

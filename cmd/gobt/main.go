@@ -9,6 +9,7 @@ import (
 
 	"github.com/godbus/dbus"
 	"github.com/potch8228/gobt"
+	"github.com/potch8228/gobt/bluetooth"
 	"github.com/satori/go.uuid"
 )
 
@@ -20,9 +21,9 @@ func main() {
 
 	dObj := conn.Object("org.bluez", "/org/bluez")
 
-	connIntr, err := gobt.Listen(gobt.PSMINTR, 1, false)
+	connIntr, err := bluetooth.Listen(bluetooth.PSMINTR, 1, false)
 	if err != nil {
-		log.Println("Listen failed: ", err, gobt.PSMINTR)
+		log.Println("Listen failed: ", err, bluetooth.PSMINTR)
 		return
 	}
 
@@ -45,7 +46,7 @@ func main() {
 	}
 
 	opts := map[string]dbus.Variant{
-		"PSM": dbus.MakeVariant(uint16(gobt.PSMCTRL)),
+		"PSM": dbus.MakeVariant(uint16(bluetooth.PSMCTRL)),
 		"RequireAuthentication": dbus.MakeVariant(true),
 		"RequireAuthorization":  dbus.MakeVariant(true),
 		"ServiceRecord":         dbus.MakeVariant(bytes.NewBuffer(sdp).String()),

@@ -1,10 +1,11 @@
-package gobt
+package hid
 
 import (
 	"fmt"
 	"log"
 
 	"github.com/gvalkov/golang-evdev"
+	"github.com/potch8228/gobt/bluetooth"
 )
 
 type DeviceEventCtrl byte
@@ -53,10 +54,10 @@ type Keyboard struct {
 	evlp  bool
 	ctl   chan DeviceEventCtrl
 	intr  chan *evdev.InputEvent
-	sintr *Bluetooth
+	sintr *bluetooth.Bluetooth
 }
 
-func NewKeyboard(path string, sintr *Bluetooth) (*Keyboard, error) {
+func NewKeyboard(path string, sintr *bluetooth.Bluetooth) (*Keyboard, error) {
 	k := new(Keyboard)
 
 	k.evlp = false
@@ -214,10 +215,10 @@ type Mouse struct {
 	evlp  bool
 	ctl   chan DeviceEventCtrl
 	intr  chan *evdev.InputEvent
-	sintr *Bluetooth
+	sintr *bluetooth.Bluetooth
 }
 
-func NewMouse(path string, sintr *Bluetooth) (*Mouse, error) {
+func NewMouse(path string, sintr *bluetooth.Bluetooth) (*Mouse, error) {
 	m := new(Mouse)
 
 	m.evlp = false
