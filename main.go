@@ -8,6 +8,7 @@ import (
 	"os/signal"
 
 	"github.com/godbus/dbus"
+	uuid "github.com/satori/go.uuid"
 )
 
 func main() {

@@ -19,7 +19,7 @@ Required Modules
  - Go 1.6.2+
     - [godbus/dbus](https://github.com/godbus/dbus)
     - [gvalkov/golang-evdev](https://github.com/gvalkov/golang-evdev)
-    - [satori/go.uuid](https://github.com/atori/go.uuid)
+    - [satori/go.uuid](https://github.com/satori/go.uuid)
 
 Preparation
 ----
