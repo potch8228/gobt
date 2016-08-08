@@ -61,3 +61,5 @@ _testmain.go
 
 ### Project Original
 gobt
+.glide/
+vendor/

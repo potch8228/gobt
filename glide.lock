@@ -1,0 +1,16 @@
+hash: 8d372b7ae8d3669fa54a308372f609f0ac04b9c7302f00d19c78a53791a635a3
+updated: 2016-08-08T11:46:01.431130847+09:00
+imports:
+- name: github.com/godbus/dbus
+  version: 5f6efc7ef2759c81b7ba876593971bfce311eab3
+- name: github.com/gvalkov/golang-evdev
+  version: 4b2bfd0f1065db48df46cd9f069b9b0f7511858f
+- name: github.com/jteeuwen/evdev
+  version: d9982c47c9352fdccc24e6177fd552309e62cd93
+- name: github.com/satori/go.uuid
+  version: 879c5887cd475cd7864858769793b2ceb0d44feb
+- name: golang.org/x/sys
+  version: a646d33e2ee3172a661fc09bca23bb4889a41bc8
+  subpackages:
+  - unix
+testImports: []
