@@ -1,4 +1,4 @@
-package main
+package gobt
 
 // Original code is from Liam Fraser's Python implementation
 // which is from Lubomir Rintel <lkundrak@v3.sk> implementation.

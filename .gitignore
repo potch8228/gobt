@@ -60,6 +60,6 @@ _testmain.go
 *.prof
 
 ### Project Original
-gobt
+/gobt
 .glide/
 vendor/

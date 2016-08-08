@@ -1,4 +1,4 @@
-package main
+package gobt
 
 import (
 	"fmt"
@@ -45,28 +45,33 @@ const (
 
 var mu sync.Mutex
 
-func setFd(fd int, fdset *unix.FdSet) {
+type FdSet struct {
+	Bits [32]int32
+}
+
+func setFd(fd int, fdset *FdSet) {
 	mask := uint(1) << (uint(fd) % uint(FDBITS))
 	fdset.Bits[fd/FDBITS] |= int32(mask)
 }
 
-func isSetFd(fd int, fdset *unix.FdSet) bool {
+func isSetFd(fd int, fdset *FdSet) bool {
 	mask := uint(1) << (uint(fd) % uint(FDBITS))
 	return ((fdset.Bits[fd/FDBITS] & int32(mask)) != 0)
 }
 
-func internalSelect(fd int, r, w, e *unix.FdSet, to time.Duration) (int, error) {
+func internalSelect(fd int, r, w, e *FdSet, to time.Duration) (int, error) {
 	t := unix.NsecToTimeval(to.Nanoseconds())
-	rFd := (*unix.FdSet)(unsafe.Pointer(r))
-	wFd := (*unix.FdSet)(unsafe.Pointer(w))
-	eFd := (*unix.FdSet)(unsafe.Pointer(e))
+	rFd := uintptr(unsafe.Pointer(r))
+	wFd := uintptr(unsafe.Pointer(w))
+	eFd := uintptr(unsafe.Pointer(e))
 
-	n, err := unix.Select(fd, rFd, wFd, eFd, &t)
-	if err != nil {
+	// n, err := unix.Select(fd, rFd, wFd, eFd, &t)
+	n, _, err := unix.Syscall6(unix.SYS_SELECT, uintptr(fd), rFd, wFd, eFd, uintptr(unsafe.Pointer(&t)), 0)
+	if err != 0 {
 		log.Println("Select Error: ", err)
 		return -1, err
 	}
-	return n, nil
+	return int(n), nil
 }
 
 type Bluetooth struct {
@@ -204,7 +209,7 @@ func (bt *Bluetooth) Accept() (*Bluetooth, error) {
 	var rAddr *SockaddrL2
 
 	t := 5 * time.Second
-	fds := &unix.FdSet{Bits: [32]int32{0}}
+	fds := &FdSet{Bits: [32]int32{0}}
 	setFd(bt.fd, fds)
 	for {
 		if !bt.block {
@@ -276,7 +281,7 @@ func (bt *Bluetooth) Read(b []byte) (int, error) {
 		bp = unsafe.Pointer(&_zero)
 	}
 	t := 5 * time.Second
-	fds := &unix.FdSet{Bits: [32]int32{0}}
+	fds := &FdSet{Bits: [32]int32{0}}
 	setFd(bt.fd, fds)
 
 	var r int
@@ -319,7 +324,7 @@ func (bt *Bluetooth) Write(d []byte) (int, error) {
 		dp = unsafe.Pointer(&_zero)
 	}
 	t := 5 * time.Second
-	fds := &unix.FdSet{Bits: [32]int32{0}}
+	fds := &FdSet{Bits: [32]int32{0}}
 	setFd(bt.fd, fds)
 
 	var r int

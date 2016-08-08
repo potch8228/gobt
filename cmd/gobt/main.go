@@ -8,7 +8,8 @@ import (
 	"os/signal"
 
 	"github.com/godbus/dbus"
-	uuid "github.com/satori/go.uuid"
+	"github.com/potch8228/gobt"
+	"github.com/satori/go.uuid"
 )
 
 func main() {
@@ -19,14 +20,14 @@ func main() {
 
 	dObj := conn.Object("org.bluez", "/org/bluez")
 
-	connIntr, err := Listen(PSMINTR, 1, false)
+	connIntr, err := gobt.Listen(gobt.PSMINTR, 1, false)
 	if err != nil {
-		log.Println("Listen failed: ", err, PSMINTR)
+		log.Println("Listen failed: ", err, gobt.PSMINTR)
 		return
 	}
 
 	var r interface{}
-	hidp := NewHidProfile("/red/potch/profile", connIntr)
+	hidp := gobt.NewHidProfile("/red/potch/profile", connIntr)
 
 	if err := conn.Export(hidp, hidp.Path(), "org.bluez.Profile1"); err != nil {
 		log.Fatalln(err)
@@ -44,7 +45,7 @@ func main() {
 	}
 
 	opts := map[string]dbus.Variant{
-		"PSM": dbus.MakeVariant(uint16(PSMCTRL)),
+		"PSM": dbus.MakeVariant(uint16(gobt.PSMCTRL)),
 		"RequireAuthentication": dbus.MakeVariant(true),
 		"RequireAuthorization":  dbus.MakeVariant(true),
 		"ServiceRecord":         dbus.MakeVariant(bytes.NewBuffer(sdp).String()),
