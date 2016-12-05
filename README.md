@@ -9,14 +9,14 @@ Requirements
 ----
 - Linux
     - Tested with Raspbian Jessie
-    - (Raspberry Pi 2 for transmitter; Raspberry Pi 3 for receiver)
+    - (Raspberry Pi 3 for transmitter; Raspberry Pi 2  or macOS Sierra(MacBook Air 2012 13") for receiver)
 - BlueZ 5.23+
     - DBus
     - Systemd
 
 Required Modules
 ----
- - Go 1.6.2+
+ - Go 1.7.4+
     - [godbus/dbus](https://github.com/godbus/dbus)
     - [gvalkov/golang-evdev](https://github.com/gvalkov/golang-evdev)
     - [satori/go.uuid](https://github.com/satori/go.uuid)
@@ -74,10 +74,6 @@ $ sudo bluetoothctl
 Usage
 ----
 `sudo ./gobt`
-
-or
-
-`sudo go run`
 
 (need to execute with root/admin privilege)
 
