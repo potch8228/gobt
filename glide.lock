@@ -1,5 +1,5 @@
-hash: 8d372b7ae8d3669fa54a308372f609f0ac04b9c7302f00d19c78a53791a635a3
-updated: 2016-08-08T11:46:01.431130847+09:00
+hash: dbfc0ded03e62b323da743c9a996b682d029ffd4ee4f02bc68fa499debe4acbb
+updated: 2016-12-05T11:52:02.356017728+09:00
 imports:
 - name: github.com/godbus/dbus
   version: 5f6efc7ef2759c81b7ba876593971bfce311eab3
