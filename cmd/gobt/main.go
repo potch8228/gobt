@@ -14,27 +14,23 @@ import (
 )
 
 func main() {
-	conn, err := dbus.SystemBus()
-	if err != nil {
-		log.Fatalln("Failed to connect to system bus: ", err)
-	}
-
-	dObj := conn.Object("org.bluez", "/org/bluez")
-
 	connIntr, err := bluetooth.Listen(bluetooth.PSMINTR, 1, false)
 	if err != nil {
 		log.Println("Listen failed: ", err, bluetooth.PSMINTR)
 		return
 	}
 
-	var r interface{}
 	hidp := gobt.NewHidProfile("/red/potch/profile", connIntr)
+
+	conn, err := dbus.SystemBus()
+	if err != nil {
+		log.Fatalln("Failed to connect to system bus: ", err)
+	}
 
 	if err := conn.Export(hidp, hidp.Path(), "org.bluez.Profile1"); err != nil {
 		log.Fatalln(err)
 	}
-
-	uid := uuid.NewV4()
+	log.Println("org.bluez.Profile1 exported")
 
 	s, err := os.Open("./sdp_record.xml")
 	if err != nil {
@@ -51,9 +47,13 @@ func main() {
 		"RequireAuthorization":  dbus.MakeVariant(true),
 		"ServiceRecord":         dbus.MakeVariant(bytes.NewBuffer(sdp).String()),
 	}
+	uid := uuid.NewV4()
+
 	dObjCh := make(chan *dbus.Call, 1)
+	dObj := conn.Object("org.bluez", "/org/bluez")
 	regObjCall := dObj.Go("org.bluez.ProfileManager1.RegisterProfile", 0, dObjCh, hidp.Path(), uid.String(), opts)
 	log.Println(regObjCall)
+	var r interface{}
 	if regObjCall.Err != nil {
 		log.Println(regObjCall.Store(&r))
 		log.Println(r)
@@ -75,6 +75,7 @@ func main() {
 		case <-sig:
 			log.Println("Will Quit Program")
 			evloop = false
+		default:
 		}
 	}
 
