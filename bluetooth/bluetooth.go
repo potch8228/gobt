@@ -61,20 +61,6 @@ func isSetFd(fd int, fdset *FdSet) bool {
 	return ((fdset.Bits[fd/FDBITS] & int32(mask)) != 0)
 }
 
-func internalSelect(fd int, r, w, e *FdSet, to time.Duration) (int, error) {
-	t := unix.NsecToTimeval(to.Nanoseconds())
-	rFd := uintptr(unsafe.Pointer(r))
-	wFd := uintptr(unsafe.Pointer(w))
-	eFd := uintptr(unsafe.Pointer(e))
-
-	n, _, err := unix.Syscall6(unix.SYS_SELECT, uintptr(fd), rFd, wFd, eFd, uintptr(unsafe.Pointer(&t)), 0)
-	if err != 0 {
-		log.Println("Select Error: ", err)
-		return -1, err
-	}
-	return int(n), nil
-}
-
 type Bluetooth struct {
 	fd     int
 	family int
@@ -215,24 +201,16 @@ func (bt *Bluetooth) Accept() (*Bluetooth, error) {
 	var nFd int
 	var rAddr *SockaddrL2
 
-	t := 5 * time.Second
 	fds := &FdSet{Bits: [32]int32{0}}
 	setFd(bt.fd, fds)
 	for {
-		if !bt.block {
-			if to, err := internalSelect(bt.fd+1, fds, nil, nil, t); err != nil && to < 1 {
-				log.Println("Select Syscall Failure: ", err)
-				return nil, err
-			}
-		}
-
 		var raddr RawSockaddrL2
 		var addrlen _Socklen = _Socklen(unsafe.Sizeof(RawSockaddrL2{}))
 		rFd, _, err := unix.Syscall(unix.SYS_ACCEPT, uintptr(bt.fd), uintptr(unsafe.Pointer(&raddr)), uintptr(unsafe.Pointer(&addrlen)))
 		if err != 0 {
 			switch err {
 			case syscall.EAGAIN:
-				time.Sleep(10 * time.Millisecond)
+				time.Sleep(1 * time.Millisecond)
 				continue
 			case syscall.ECONNABORTED:
 				continue
@@ -287,25 +265,17 @@ func (bt *Bluetooth) Read(b []byte) (int, error) {
 	} else {
 		bp = unsafe.Pointer(&_zero)
 	}
-	t := 5 * time.Second
 	fds := &FdSet{Bits: [32]int32{0}}
 	setFd(bt.fd, fds)
 
 	var r int
 	for {
-		if !bt.block {
-			if to, err := internalSelect(bt.fd+1, fds, nil, nil, t); err != nil && to < 1 {
-				log.Println("Select Syscall Failure: ", err)
-				return -1, err
-			}
-		}
-
 		_r, _, err := unix.Syscall(unix.SYS_READ, uintptr(bt.fd), uintptr(bp), uintptr(len(b)))
 
 		if err != 0 {
 			switch err {
 			case syscall.EAGAIN:
-				time.Sleep(10 * time.Millisecond)
+				time.Sleep(1 * time.Millisecond)
 				continue
 			}
 			log.Println("Bluetooth Read Error: ", err)
@@ -330,19 +300,11 @@ func (bt *Bluetooth) Write(d []byte) (int, error) {
 	} else {
 		dp = unsafe.Pointer(&_zero)
 	}
-	t := 5 * time.Second
 	fds := &FdSet{Bits: [32]int32{0}}
 	setFd(bt.fd, fds)
 
 	var r int
 	for {
-		if bt.block {
-			if to, err := internalSelect(bt.fd+1, nil, fds, nil, t); err != nil && to < 1 {
-				log.Println("Select Syscall Failure: ", err)
-				return -1, err
-			}
-		}
-
 		_r, _, err := unix.Syscall(unix.SYS_WRITE, uintptr(bt.fd), uintptr(dp), uintptr(len(d)))
 
 		if err != 0 {
