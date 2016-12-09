@@ -1,12 +1,12 @@
 package gobt
 
 import (
-	"log"
 	"path/filepath"
 	"time"
 
 	"github.com/potch8228/gobt/bluetooth"
 	"github.com/potch8228/gobt/hid"
+	btlog "github.com/potch8228/gobt/log"
 )
 
 type GoBtPollState byte
@@ -48,13 +48,13 @@ func NewGoBt(sintr, sctrl *bluetooth.Bluetooth) *GoBt {
 	msePs, _ := filepath.Glob("/dev/input/by-path/*event-mouse")
 	gobt.registerMousePaths(msePs)
 
-	log.Println("Sending hello on ctrl channel")
+	btlog.Debug("Sending hello on ctrl channel")
 	if _, err := gobt.sctrl.Write([]byte{0xa1, 0x13, 0x03}); err != nil {
-		log.Println("Failure on Sending Hello on Ctrl 1: ", err)
+		btlog.Debug("Failure on Sending Hello on Ctrl 1", err)
 		return nil
 	}
 	if _, err := gobt.sctrl.Write([]byte{0xa1, 0x13, 0x02}); err != nil {
-		log.Println("Failure on Sending Hello on Ctrl 2: ", err)
+		btlog.Debug("Failure on Sending Hello on Ctrl 2", err)
 		return nil
 	}
 	time.Sleep(1 * time.Second)
@@ -67,13 +67,13 @@ func (gb *GoBt) startProcessCtrlEvent() {
 	for {
 		select {
 		case <-gb.cctl:
-			log.Println("Will Quit GoBt Process loop")
+			btlog.Debug("Will Quit GoBt Process loop")
 			return
 		default:
 			r := make([]byte, bluetooth.BUFSIZE)
 			d, err := gb.sctrl.Read(r)
 			if err != nil || d < 1 {
-				log.Println("GoBt.procesCtrlEvent: no data received - quitting event loop")
+				btlog.Debug("GoBt.procesCtrlEvent: no data received - quitting event loop")
 				gb.Close()
 				return
 			}
@@ -83,15 +83,15 @@ func (gb *GoBt) startProcessCtrlEvent() {
 
 			switch {
 			case (msgTyp & HIDPTRANSSETPROTOCOL) != 0:
-				log.Println("GoBt.procesCtrlEvent: handshake set protocol")
+				btlog.Debug("GoBt.procesCtrlEvent: handshake set protocol")
 				hsk[0] |= HIDPHSHKSUCCESSFUL
 				if _, err := gb.sctrl.Write(hsk); err != nil {
-					log.Println("GoBt.procesCtrlEvent: handshake set protocol: failure on reply")
+					btlog.Debug("GoBt.procesCtrlEvent: handshake set protocol: failure on reply")
 				}
 			case (msgTyp & HIDPTRANSDATA) != 0:
-				log.Println("GoBt.procesCtrlEvent: handshake data")
+				btlog.Debug("GoBt.procesCtrlEvent: handshake data")
 			default:
-				log.Println("GoBt.procesCtrlEvent: unknown handshake message")
+				btlog.Debug("GoBt.procesCtrlEvent: unknown handshake message")
 				hsk[0] |= HIDPHSHKERRUNKNOWN
 				gb.sctrl.Write(hsk)
 			}
@@ -105,7 +105,7 @@ func (gb *GoBt) registerKeyboardPaths(ps []string) {
 	for i, p := range ps {
 		kbds[i], err = hid.NewKeyboard(p, gb.sintr)
 		if err != nil {
-			log.Println("New Keyboard Initialization failed: ", err, i)
+			btlog.Debug("New Keyboard Initialization failed", err, i)
 		}
 	}
 	gb.kbds = kbds
@@ -117,7 +117,7 @@ func (gb *GoBt) registerMousePaths(ps []string) {
 	for i, p := range ps {
 		mses[i], err = hid.NewMouse(p, gb.sintr)
 		if err != nil {
-			log.Println("New Mouse Initialization failed: ", err, i)
+			btlog.Debug("New Mouse Initialization failed", err, i)
 		}
 	}
 	gb.mses = mses
@@ -132,12 +132,12 @@ func (gb *GoBt) Close() {
 		mse.StopProcess()
 	}
 
-	log.Println("Stopped HIDevices")
+	btlog.Debug("Stopped HIDevices")
 
-	log.Println("Trying to Stop GoBt evevnt loop")
+	btlog.Debug("Trying to Stop GoBt evevnt loop")
 	gb.cctl <- STOP
 
-	log.Println("Trying to Destory Objects")
+	btlog.Debug("Trying to Destory Objects")
 	gb.kbds = nil
 	gb.mses = nil
 	gb.sintr = nil

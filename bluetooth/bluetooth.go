@@ -2,11 +2,12 @@ package bluetooth
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"syscall"
 	"time"
 	"unsafe"
+
+	btlog "github.com/potch8228/gobt/log"
 
 	"golang.org/x/sys/unix"
 )
@@ -80,7 +81,7 @@ func (bt *Bluetooth) SetBlocking(block bool) error {
 	dFlgPtr, _, err := unix.Syscall(unix.SYS_FCNTL, uintptr(bt.fd), unix.F_GETFL, 0)
 
 	if err != 0 {
-		log.Println("SetBlocking fetch state: ", err)
+		btlog.Debug("Error SetBlocking set state", err)
 		return err
 	}
 
@@ -93,7 +94,7 @@ func (bt *Bluetooth) SetBlocking(block bool) error {
 
 	_, _, err = unix.Syscall(unix.SYS_FCNTL, uintptr(bt.fd), unix.F_SETFL, uintptr(delayFlag))
 	if err != 0 {
-		log.Println("SetBlocking set state: ", err)
+		btlog.Debug("Error SetBlocking set state", err)
 		return err
 	}
 
@@ -116,7 +117,7 @@ func NewBluetoothSocket(fd int) (*Bluetooth, error) {
 	var addrlen _Socklen = _Socklen(unsafe.Sizeof(RawSockaddrL2{}))
 	_, _, err := unix.RawSyscall(unix.SYS_GETSOCKNAME, uintptr(fd), uintptr(unsafe.Pointer(&rsa)), uintptr(unsafe.Pointer(&addrlen)))
 	if int(err) != 0 {
-		log.Println("Failure on getsockname: ", err)
+		btlog.Debug("Failure on getsockname", err)
 		unix.Close(fd)
 		return nil, err
 	}
@@ -126,8 +127,7 @@ func NewBluetoothSocket(fd int) (*Bluetooth, error) {
 		Bdaddr: rsa.Bdaddr,
 	}
 
-	log.Println("Resolved sockname: ", bt.saddr)
-	log.Println("New Socket is created")
+	btlog.Debug("Resolved sockname", bt.saddr, "New Socket is created")
 
 	return bt, nil
 }
@@ -145,21 +145,20 @@ func Listen(psm uint, bklen int, block bool) (*Bluetooth, error) {
 
 	fd, err := unix.Socket(bt.family, bt.typ, bt.proto)
 	if err != nil {
-		log.Println(err)
+		btlog.Debug("Socket could not be created", err)
 		return nil, err
 	}
-	log.Println("Socket is created")
+	btlog.Debug("Socket is created")
 
 	bt.fd = fd
 	unix.CloseOnExec(bt.fd)
 
 	if err := bt.SetBlocking(block); err != nil {
 		_err := bt.Close()
-		log.Println(_err)
-		log.Println("SetBlocking: ", err)
+		btlog.Debug("SetBlocking", _err, err)
 		return nil, err
 	}
-	log.Println("Socket is set blocking mode")
+	btlog.Debug("Socket is set blocking mode")
 
 	// because L2CAP socket address struct does not exist in golang's standard libs
 	// must be binded by using very low-level operations
@@ -175,20 +174,18 @@ func Listen(psm uint, bklen int, block bool) (*Bluetooth, error) {
 		case 0:
 		default:
 			_err := bt.Close()
-			log.Println(_err)
-			log.Println(err)
-			log.Println("Failure on Binding Socket")
+			btlog.Debug("Failure on Binding Socket", _err, err)
 			return nil, err
 		}
 	}
-	log.Println("Socket is binded")
+	btlog.Debug("Socket is binded")
 
 	if err := unix.Listen(bt.fd, bklen); err != nil {
 		_err := bt.Close()
-		log.Println(_err)
+		btlog.Debug(_err)
 		return nil, err
 	}
-	log.Println("Socket is listening")
+	btlog.Debug("Socket is listening")
 
 	return bt, nil
 }
@@ -215,7 +212,7 @@ func (bt *Bluetooth) Accept() (*Bluetooth, error) {
 			case syscall.ECONNABORTED:
 				continue
 			}
-			log.Println("Accept: Socket err: ", err)
+			btlog.Debug("Accept: Socket Error", err)
 			unix.Close(int(rFd))
 			return nil, err
 		}
@@ -228,7 +225,7 @@ func (bt *Bluetooth) Accept() (*Bluetooth, error) {
 		break
 	}
 
-	log.Println("Remote Address Info: ", rAddr)
+	btlog.Debug("Remote Address Info", rAddr)
 
 	rbt := &Bluetooth{
 		family: bt.family,
@@ -240,16 +237,15 @@ func (bt *Bluetooth) Accept() (*Bluetooth, error) {
 	}
 
 	unix.CloseOnExec(nFd)
-	log.Println("Accept closeonexec")
+	btlog.Debug("Accept closeonexec")
 
 	if err := rbt.SetBlocking(false); err != nil {
 		_err := bt.Close()
 		_err = rbt.Close()
-		log.Println(_err)
-		log.Println("SetBlocking: ", err)
+		btlog.Debug(_err, "SetBlocking", err)
 		return nil, err
 	}
-	log.Println("Accepted Socket is set blocking mode")
+	btlog.Debug("Accepted Socket could set blocking mode")
 
 	return rbt, nil
 }
@@ -278,7 +274,7 @@ func (bt *Bluetooth) Read(b []byte) (int, error) {
 				time.Sleep(1 * time.Millisecond)
 				continue
 			}
-			log.Println("Bluetooth Read Error: ", err)
+			btlog.Debug("Bluetooth Read Error", err)
 			return -1, err
 		}
 
@@ -308,7 +304,7 @@ func (bt *Bluetooth) Write(d []byte) (int, error) {
 		_r, _, err := unix.Syscall(unix.SYS_WRITE, uintptr(bt.fd), uintptr(dp), uintptr(len(d)))
 
 		if err != 0 {
-			log.Println("Bluetooth Write Error: ", err)
+			btlog.Debug("Bluetooth Write Error", err)
 			return -1, err
 		}
 
@@ -327,7 +323,7 @@ func (bt *Bluetooth) Close() error {
 	}
 
 	if err := unix.Close(bt.fd); err != nil {
-		log.Println("Bluetooth Close fd: ", err)
+		btlog.Debug("Bluetooth Close fd Error", err)
 		return err
 	}
 

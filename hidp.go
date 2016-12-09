@@ -2,12 +2,12 @@ package gobt
 
 import (
 	"fmt"
-	"log"
 
 	"golang.org/x/sys/unix"
 
 	"github.com/godbus/dbus"
 	"github.com/potch8228/gobt/bluetooth"
+	btlog "github.com/potch8228/gobt/log"
 )
 
 type HidProfile struct {
@@ -34,47 +34,47 @@ func (p *HidProfile) Path() dbus.ObjectPath {
 }
 
 func (p *HidProfile) Release() *dbus.Error {
-	log.Println("Release")
+	btlog.Debug("Release")
 	return nil
 }
 
 func (p *HidProfile) NewConnection(dev dbus.ObjectPath, fd dbus.UnixFD, fdProps map[string]dbus.Variant) *dbus.Error {
-	log.Println("NewConnection", dev, fd, fdProps)
+	btlog.Debug("NewConnection", dev, fd, fdProps)
 
 	var err error
 	p.sintr, err = p.connIntr.Accept()
 	if err != nil {
 		p.connIntr.Close()
-		log.Println("Accept failed: ", err, bluetooth.PSMINTR)
+		btlog.Debug("Accept failed", err, bluetooth.PSMINTR)
 		return dbus.NewError(fmt.Sprintf("Accept failed: %v", bluetooth.PSMINTR), []interface{}{err})
 	}
-	log.Println("Connection Accepted : ", bluetooth.PSMINTR)
+	btlog.Debug("Connection Accepted", bluetooth.PSMINTR)
 
 	p.sctrl, err = bluetooth.NewBluetoothSocket(int(fd))
 	if err != nil {
 		_err := unix.Close(int(fd))
 
 		if _err != nil {
-			log.Println("NewBluetoothSocket closing fd failed: ", _err)
-			return dbus.NewError("NewBluetoothSocket closing fd failed: ", []interface{}{_err})
+			btlog.Debug("NewBluetoothSocket closing fd failed", _err)
+			return dbus.NewError("NewBluetoothSocket closing fd failed", []interface{}{_err})
 		}
-		log.Println("NewBluetoothSocket failed: ", err, fd, fdProps)
+		btlog.Debug("NewBluetoothSocket failed", err, fd, fdProps)
 		return dbus.NewError(fmt.Sprintf("NewBluetoothSocket failed: %v, %v, %v", err, fd, fdProps), []interface{}{err})
 	}
-	log.Println("Created New Ctrl Socket")
+	btlog.Debug("Created New Ctrl Socket")
 
 	p.gb[dev] = NewGoBt(p.sintr, p.sctrl)
 	return nil
 }
 
 func (p *HidProfile) RequestDisconnection(dev dbus.ObjectPath) *dbus.Error {
-	log.Println("RequestDisconnection: ", dev)
+	btlog.Debug("RequestDisconnection", dev)
 	p.gb[dev].Close()
 	return nil
 }
 
 func (p *HidProfile) Close() {
-	log.Println("Hid Profile will close")
+	btlog.Debug("Hid Profile will close")
 	for k := range p.gb {
 		p.gb[k].Close()
 		p.gb[k] = nil

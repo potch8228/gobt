@@ -6,6 +6,7 @@ import (
 
 	"github.com/gvalkov/golang-evdev"
 	"github.com/potch8228/gobt/bluetooth"
+	btlog "github.com/potch8228/gobt/log"
 )
 
 type DeviceEventCtrl byte
@@ -71,7 +72,7 @@ func NewKeyboard(path string, sintr *bluetooth.Bluetooth) (*Keyboard, error) {
 	var err error
 	k.dev, err = evdev.Open(path)
 	if err != nil {
-		log.Println("Failure on Opening Keyboard: ", path)
+		btlog.Debug("Failure on Opening Keyboard: ", path)
 		return nil, err
 	}
 	k.sintr = sintr
@@ -91,9 +92,9 @@ func (k *Keyboard) startProcess() {
 	for k.evlp {
 		select {
 		case ev := <-k.intr:
-			log.Println("Keyboard Event detected", ev)
+			btlog.Debug("Keyboard Event detected", ev)
 			if err := k.changeState(ev); err != nil {
-				log.Println("Failure on keyboard changeState", err)
+				btlog.Debug("Failure on keyboard changeState", err)
 				k.StopProcess()
 				break
 			}
@@ -104,7 +105,7 @@ func (k *Keyboard) startProcess() {
 	k.evlp = false
 	close(k.ctl)
 	close(k.intr)
-	log.Println("Stopping Keyboard Event loop")
+	btlog.Debug("Stopping Keyboard Event loop")
 }
 
 func (k *Keyboard) StopProcess() {
@@ -116,12 +117,12 @@ func (k *Keyboard) pollEvent() {
 	for {
 		select {
 		case <-k.ctl:
-			log.Println("Quitting Keyboard Poller")
+			btlog.Debug("Quitting Keyboard Poller")
 			return
 		default:
 			input, err := k.dev.ReadOne()
 			if err != nil {
-				log.Println("Error on reading keyboard event: ", err)
+				btlog.Debug("Error on reading keyboard event", err)
 				k.StopProcess()
 				return
 			}
@@ -136,11 +137,11 @@ func (k *Keyboard) pollEvent() {
 func (k *Keyboard) send() {
 	log.Printf("Current Keyboard State: %v", k.state)
 	if _, err := k.sintr.Write(k.state); err != nil {
-		log.Println("Failure on Sending Keyboard State")
+		btlog.Debug("Failure on Sending Keyboard State")
 		return
 	}
 
-	log.Println("Sending Keyboard State Done")
+	btlog.Debug("Sending Keyboard State Done")
 }
 
 func (k *Keyboard) changeState(ev *evdev.InputEvent) error {
@@ -258,7 +259,7 @@ func (m *Mouse) startProcess() {
 
 	close(m.ctl)
 	close(m.intr)
-	log.Println("Stopping Mouse Event Loop")
+	btlog.Debug("Stopping Mouse Event Loop")
 }
 
 func (m *Mouse) StopProcess() {
@@ -270,12 +271,12 @@ func (m *Mouse) pollEvent() {
 	for {
 		select {
 		case <-m.ctl:
-			log.Println("Quitting Mouse Poller")
+			btlog.Debug("Quitting Mouse Poller")
 			return
 		default:
 			input, err := m.dev.ReadOne()
 			if err != nil {
-				log.Println("Error on reading mouse event: ", err)
+				btlog.Debug("Error on reading mouse event", err)
 				m.StopProcess()
 				return
 			}
@@ -295,9 +296,9 @@ func (m *Mouse) pollEvent() {
 func (m *Mouse) send() {
 	log.Printf("Current Mouse State: %v", m.state)
 	if _, err := m.sintr.Write(m.state); err != nil {
-		log.Println("Failure on Sending Mouse State")
+		btlog.Debug("Failure on Sending Mouse State")
 	}
-	log.Println("Sending Mouse State Done")
+	btlog.Debug("Sending Mouse State Done")
 }
 
 func (m *Mouse) changeState(ev *evdev.InputEvent) {
